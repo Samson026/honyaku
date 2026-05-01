@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { Groq } from 'groq-sdk/client.js'
+import { ReadUserLanguage, SetUserLanguage } from "./userSettingsDB.js";
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN
 const GROK_API_KEY = process.env.GROK_API_KEY
@@ -9,7 +10,7 @@ const groq = new Groq({ apiKey: GROK_API_KEY })
 
 async function Translate(language: string, text: string) {
     const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile', // or 'mixtral-8x7b-32768'
+        model: 'llama-3.3-70b-versatile',
         messages: [{ 
             role: 'user',
             content: `You are working as a translator to translate a message from one language to another on a text app. The language you need to translate to is ${language} and the text is: ${text} \
@@ -40,23 +41,45 @@ async function ReplyToMessage(replyToken: string, text: string) {
   })
 }
 
+async function translate_reply(event: any) {
+    const language = await ReadUserLanguage(event.source.userId)
+    const translation = await Translate(language, event.message.text)
+
+    const profileRes = await fetch(
+        `https://api.line.me/v2/bot/group/${event.source.groupId}/member/${event.source.userId}`,
+        { headers: { 'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}` } }
+    )
+
+    const user = await profileRes.json();
+    const reply = `${user.displayName}:\n${translation}`
+    await ReplyToMessage(event.replyToken, reply)
+}
+
+async function set_language_reply(event: any) {
+    const language = event.message.text.split(' ')[1]
+    const userID = event.source.userId;
+    await SetUserLanguage(userID, language)
+
+    const profileRes = await fetch(
+        `https://api.line.me/v2/bot/group/${event.source.groupId}/member/${event.source.userId}`,
+        { headers: { 'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}` } }
+    )
+    const user = await profileRes.json();
+    const reply = `set user: ${user.displayName}'s translation language to ${language}`
+    await ReplyToMessage(event.replyToken, reply)
+}
+
 reply.post('/', async (c) => {
   const data = await c.req.json();
 
-  console.log(CHANNEL_ACCESS_TOKEN)
-
   for (const event of data.events) {
     if (event.type === 'message') {
-        const translation = await Translate("Japanese", event.message.text)
-
-        const profileRes = await fetch(
-            `https://api.line.me/v2/bot/group/${event.source.groupId}/member/${event.source.userId}`,
-            { headers: { 'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}` } }
-        )
-
-        const user = await profileRes.json();
-        const reply = `${user.displayName}:\n${translation}`
-        await ReplyToMessage(event.replyToken, reply)
+        if (event.message.text.includes('setLanguage')) {
+            await set_language_reply(event)
+        }
+        else {
+            await translate_reply(event)
+        }
     }
   }
   
