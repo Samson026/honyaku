@@ -3,10 +3,11 @@ import { Groq } from 'groq-sdk/client.js'
 import { ReadUserLanguage, SetUserLanguage } from "./userSettingsDB.js";
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN
-const GROK_API_KEY = process.env.GROK_API_KEY
+const GROQ_API_KEY = process.env.GROQ_API_KEY
+console.log(GROQ_API_KEY)
 
 const reply = new Hono()
-const groq = new Groq({ apiKey: GROK_API_KEY })
+const groq = new Groq({ apiKey: GROQ_API_KEY })
 
 async function Translate(language: string, text: string) {
     const response = await groq.chat.completions.create({
