@@ -3,7 +3,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dyn
 import z from 'zod'
 
 const UserSchema = z.object({
-  language: z.string()
+  lang: z.string()
 })
 
 type User = z.infer<typeof UserSchema>
@@ -33,5 +33,5 @@ export async function ReadUserLanguage(userID: string) {
   }))
 
   const user = UserSchema.parse(resp.Item)
-  return user.language
+  return user.lang
 }
