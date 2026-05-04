@@ -1,34 +1,38 @@
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { createClient } from '@libsql/client'
 import z from 'zod'
 
 const UserSchema = z.object({
-  userId: z.string(),
   language: z.string()
 })
 
 type User = z.infer<typeof UserSchema>
 
-const db = createClient({ url: 'file:mydb.db' })
+const client = new DynamoDBClient({ region: "ap-southeast-2"})
+const db = DynamoDBDocumentClient.from(client)
 
-await db.execute(`
-  CREATE TABLE IF NOT EXISTS users (
-    userId TEXT PRIMARY KEY,
-    language TEXT
-  )
-`)
 
 export async function SetUserLanguage(userID: string, language: string) {
-  await db.execute({ 
-    sql: 'INSERT OR REPLACE INTO users (userId, language) VALUES (?, ?)', 
-    args: [userID, language] 
-  })
+  await db.send(new PutCommand({
+    TableName: "honyakuUsers",
+    Item: {
+      pk: `USER#${userID}`,
+      sk: "SETTINGS#",
+      lang: language
+    }
+  }))
 }
 
 export async function ReadUserLanguage(userID: string) {
-  const result = await db.execute({ 
-    sql: 'SELECT * FROM users WHERE userId = ?', 
-    args: [userID] 
-  })
-  const user = UserSchema.parse(result.rows[0])
+  const resp = await db.send(new GetCommand({
+    TableName: "honyakuUsers",
+    Key: {
+      pk: `USER#${userID}`,
+      sk: "SETTINGS#"
+    }
+  }))
+
+  const user = UserSchema.parse(resp.Item)
   return user.language
 }

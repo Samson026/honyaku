@@ -7,10 +7,12 @@
     "start": "node --env-file=.env dist/index.js"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1041.0",
+    "@aws-sdk/lib-dynamodb": "^3.1041.0",
     "@hono/node-server": "^1.19.14",
-    "@libsql/client": "^0.17.3",
     "groq-sdk": "^1.1.2",
     "hono": "^4.12.16",
+    "honyaku": "link:",
     "zod": "^4.4.1"
   },
   "devDependencies": {
