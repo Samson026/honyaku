@@ -4,7 +4,6 @@ import { ReadUserLanguage, SetUserLanguage } from "./userSettingsDB.js";
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN
 const GROQ_API_KEY = process.env.GROQ_API_KEY
-console.log(GROQ_API_KEY)
 
 const reply = new Hono()
 const groq = new Groq({ apiKey: GROQ_API_KEY })
