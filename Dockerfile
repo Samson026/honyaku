@@ -1,21 +1,21 @@
-FROM node:25.8.1-slim AS builder
+FROM --platform=linux/amd64 node:22-slim AS builder
 WORKDIR /honyaku
 
-COPY package*.json ./
+COPY package*.json pnpm-lock.yaml ./
 
-RUN npm install
+RUN npm install -g pnpm
+RUN pnpm install
 
 COPY . .
 RUN npm run build
 
-FROM node:25.8.1-slim
-WORKDIR /honyaku
+FROM --platform=linux/amd64 public.ecr.aws/lambda/nodejs:22
+WORKDIR ${LAMBDA_TASK_ROOT}
 
-COPY package*.json ./
-COPY --from=builder ./honyaku/dist ./dist
+COPY package*.json pnpm-lock.yaml ./
+COPY --from=builder /honyaku/dist ./dist
 
-RUN npm install --omit=dev
+RUN npm install -g pnpm
+RUN pnpm install --prod
 
-EXPOSE 3000
-
-CMD ["node", "./dist/index.js"]
+CMD ["dist/index.handler"]
