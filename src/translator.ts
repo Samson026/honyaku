@@ -65,9 +65,8 @@ async function set_language_reply(event: any) {
     )
     const user = await profileRes.json();
 
-    await AddUserToGroup(groupID, userID, language, user.displayName)
+    await AddUserToGroup(userID, groupID, language, user.displayName)
 
-   
     const reply = `set user: ${user.displayName}'s translation language to ${language}`
     await ReplyToMessage(event.replyToken, reply)
 }

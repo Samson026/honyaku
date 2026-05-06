@@ -50,7 +50,7 @@ export async function GetGroupMembers(groupID: string) {
 
   const groupMembers = groupMembersDB.map(user => {
     return {
-      id: user.pk.split('#')[1],
+      id: user.sk.split('#')[1],
       lang: user.lang,
       name: user.name
     } as User
