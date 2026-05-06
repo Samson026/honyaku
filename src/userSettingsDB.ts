@@ -1,37 +1,60 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import z from 'zod'
+import { HONYAKU_TABLE } from './constants.js'
 
-const UserSchema = z.object({
-  lang: z.string()
+const UserSchemaDB = z.object({
+  pk: z.string(),
+  sk: z.string(),
+  lang: z.string(),
+  name: z.string()
 })
 
-type User = z.infer<typeof UserSchema>
+export type UserDB = z.infer<typeof UserSchemaDB>
+
+const GroupSchema = z.array(UserSchemaDB)
+
+type GroupSchemaDB = z.infer<typeof GroupSchema>
+
+type User = {
+  id: string,
+  lang: string,
+  name: string
+}
+
 
 const client = new DynamoDBClient({ region: "ap-southeast-2"})
 const db = DynamoDBDocumentClient.from(client)
 
-
-export async function SetUserLanguage(userID: string, language: string) {
+export async function AddUserToGroup(userID: string, groupID: string, language: string, displayName: string) {
   await db.send(new PutCommand({
-    TableName: "honyakuUsers",
+    TableName: HONYAKU_TABLE,
     Item: {
-      pk: `USER#${userID}`,
-      sk: "SETTINGS#",
-      lang: language
+      pk: `GROUP#${groupID}`,
+      sk: `USER#${userID}`,
+      lang: language,
+      name: displayName
     }
   }))
 }
 
-export async function ReadUserLanguage(userID: string) {
-  const resp = await db.send(new GetCommand({
-    TableName: "honyakuUsers",
-    Key: {
-      pk: `USER#${userID}`,
-      sk: "SETTINGS#"
+export async function GetGroupMembers(groupID: string) {
+  const resp = await db.send(new QueryCommand({
+    TableName: HONYAKU_TABLE,
+    KeyConditionExpression: "pk = :pk",
+    ExpressionAttributeValues: {
+      ":pk": `GROUP#${groupID}`
     }
   }))
+  const groupMembersDB = GroupSchema.parse(resp.Items)
 
-  const user = UserSchema.parse(resp.Item)
-  return user.lang
+  const groupMembers = groupMembersDB.map(user => {
+    return {
+      id: user.pk.split('#')[1],
+      lang: user.lang,
+      name: user.name
+    } as User
+  })
+
+  return groupMembers
 }
