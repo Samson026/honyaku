@@ -44,13 +44,23 @@ async function ReplyToMessage(replyToken: string, text: string) {
 async function group_translate(event: any) {
   const groupID = event.source.groupId
   const groupMembers = await GetGroupMembers(groupID)
+  var senderName = 'None';
+
+  for (const user of groupMembers) {
+    if (user.id === event.source.userId) {
+      senderName = user.name;
+      console.log(senderName)
+    }
+  }
 
   for (const user of groupMembers) {
     // dont translate for the user who sent the message
-    if (user.id === event.source.userId)
+    if (user.id === event.source.userId) {
       continue
+    }
+    console.log(senderName)
     const translation = await Translate(user.lang, event.message.text)
-    const reply = `${user.name}:\n${translation}`
+    const reply = `${senderName}:\n${translation}`
     await ReplyToMessage(event.replyToken, reply)
   }
 }
