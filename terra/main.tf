@@ -1,3 +1,14 @@
+resource "aws_ecr_repository" "ecr_repository" {
+  name = "${var.app_name}"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  # To allow terraform to delete the repository without having to delete stored images beforehand
+  force_delete = true
+}
+
 # IAM role for Lambda execution
 data "aws_iam_policy_document" "assume_role" {
   statement {
@@ -36,7 +47,7 @@ resource "aws_lambda_function" "honyaku-lambda" {
   function_name = "${var.app_name}_lamda_function"
   role          = aws_iam_role.lambda_role.arn
   package_type  = "Image"
-  image_uri     = "034817877835.dkr.ecr.ap-southeast-2.amazonaws.com/samdietz/honyaku:latest"
+  image_uri     = "${aws_ecr_repository.ecr_repository.repository_url}:latest"
 
   memory_size = 512
   timeout     = 30
