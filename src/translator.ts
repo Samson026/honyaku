@@ -76,7 +76,7 @@ reply.post('/', async (c) => {
 
   for (const event of data.events) {
     if (event.type === 'message') {
-        if (event.message.text.includes('setLanguage')) {
+        if (event.message.text.includes('/setLanguage')) {
             await set_language_reply(event)
         }
         else {
