@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Groq } from 'groq-sdk/client.js'
-import { ReadUserLanguage, SetUserLanguage } from "./userSettingsDB.js";
+import { AddUserToGroup, GetGroupMembers } from "./userSettingsDB.js";
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN
 const GROQ_API_KEY = process.env.GROQ_API_KEY
@@ -41,30 +41,42 @@ async function ReplyToMessage(replyToken: string, text: string) {
   })
 }
 
-async function translate_reply(event: any) {
-    const language = await ReadUserLanguage(event.source.userId)
-    const translation = await Translate(language, event.message.text)
+async function group_translate(event: any) {
+  const groupID = event.source.groupId
+  const groupMembers = await GetGroupMembers(groupID)
+  var senderName = 'None';
 
-    const profileRes = await fetch(
-        `https://api.line.me/v2/bot/group/${event.source.groupId}/member/${event.source.userId}`,
-        { headers: { 'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}` } }
-    )
+  for (const user of groupMembers) {
+    if (user.id === event.source.userId) {
+      senderName = user.name;
+      console.log(senderName)
+    }
+  }
 
-    const user = await profileRes.json();
-    const reply = `${user.displayName}:\n${translation}`
+  for (const user of groupMembers) {
+    // dont translate for the user who sent the message
+    if (user.id === event.source.userId) {
+      continue
+    }
+    console.log(senderName)
+    const translation = await Translate(user.lang, event.message.text)
+    const reply = `${senderName}:\n${translation}`
     await ReplyToMessage(event.replyToken, reply)
+  }
 }
 
 async function set_language_reply(event: any) {
     const language = event.message.text.split(' ')[1]
     const userID = event.source.userId;
-    await SetUserLanguage(userID, language)
-
+    const groupID = event.source.groupId
     const profileRes = await fetch(
-        `https://api.line.me/v2/bot/group/${event.source.groupId}/member/${event.source.userId}`,
-        { headers: { 'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}` } }
+      `https://api.line.me/v2/bot/group/${groupID}/member/${userID}`,
+      { headers: { 'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}` } }
     )
     const user = await profileRes.json();
+
+    await AddUserToGroup(userID, groupID, language, user.displayName)
+
     const reply = `set user: ${user.displayName}'s translation language to ${language}`
     await ReplyToMessage(event.replyToken, reply)
 }
@@ -74,11 +86,11 @@ reply.post('/', async (c) => {
 
   for (const event of data.events) {
     if (event.type === 'message') {
-        if (event.message.text.includes('setLanguage')) {
+        if (event.message.text.includes('/setLanguage')) {
             await set_language_reply(event)
         }
         else {
-            await translate_reply(event)
+            await group_translate(event)
         }
     }
   }

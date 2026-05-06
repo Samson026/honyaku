@@ -1,0 +1,1 @@
+export const HONYAKU_TABLE = "honyakuUsers"
