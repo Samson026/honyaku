@@ -15,7 +15,7 @@ async function Translate(language: string, text: string) {
             role: 'user',
             content: `You are working as a translator to translate a message from one language to another on a text app. The language you need to translate to is ${language} and the text is: ${text} \
             There is no need for anything in the response apart from the translated text. And it should appear as if the original message was written in the translated language. As this is an app between friends keep the casualness \
-            of the response to match the original message`
+            of the response to match the original message. Keep the translation as gender nutural as possible, only generated gendered language if it is obviously there from the original message.`
         }]
     })
 
