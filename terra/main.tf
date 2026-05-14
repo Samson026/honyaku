@@ -52,7 +52,7 @@ resource "aws_lambda_function" "honyaku-lambda" {
   memory_size = 512
   timeout     = 30
 
-  architectures = ["x86_64"] # Graviton support for better price/performance
+  architectures = ["arm64"]
 
   environment {
     variables = {

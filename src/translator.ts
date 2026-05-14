@@ -1,25 +1,33 @@
 import { Hono } from "hono";
-import { Groq } from 'groq-sdk/client.js'
 import { AddUserToGroup, GetGroupMembers } from "./userSettingsDB.js";
+import Anthropic from "@anthropic-ai/sdk";
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN
-const GROQ_API_KEY = process.env.GROQ_API_KEY
+const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY
 
 const reply = new Hono()
-const groq = new Groq({ apiKey: GROQ_API_KEY })
+const client = new Anthropic({
+  apiKey: CLAUDE_API_KEY
+})
 
 async function Translate(language: string, text: string) {
-    const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ 
-            role: 'user',
-            content: `You are working as a translator to translate a message from one language to another on a text app. The language you need to translate to is ${language} and the text is: ${text} \
+  const message = await client.messages.create({
+    max_tokens: 1024,
+    messages: [{ 
+      role: "user",
+      content: `You are working as a translator to translate a message from one language to another on a text app. The language you need to translate to is ${language} and the text is: ${text} \
             There is no need for anything in the response apart from the translated text. And it should appear as if the original message was written in the translated language. As this is an app between friends keep the casualness \
-            of the response to match the original message`
-        }]
-    })
+            of the response to match the original message` 
+    }],
+    model: "claude-sonnet-4-6"
+  });
 
-    return String(response.choices[0].message.content)
+  for (const block of message.content) {
+    if (block.type === "text") {
+      return block.text
+    }
+  }
+  throw new Error("no text block in Anthropic response")
 }
 
 async function ReplyToMessage(replyToken: string, text: string) {
