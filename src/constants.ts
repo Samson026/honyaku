@@ -1,1 +1,1 @@
-export const HONYAKU_TABLE = "honyakuUsers"
+export const HONYAKU_TABLE = "honyakuUsers";
