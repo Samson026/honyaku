@@ -1,6 +1,6 @@
 variable "app_name" {
   type    = string
-  default = "honyaku-test"
+  default = "honyaku"
 }
 
 variable "channel_access_token" {
