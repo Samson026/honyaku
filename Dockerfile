@@ -1,21 +1,16 @@
-FROM --platform=linux/arm64 node:22-slim AS builder
+FROM --platform=linux/amd64 oven/bun:1 AS builder
 WORKDIR /honyaku
 
-COPY package*.json pnpm-lock.yaml ./
+COPY package*.json bun.lock ./
 
-RUN npm install -g pnpm@9
-RUN pnpm install
+RUN bun install --frozen-lockfile
 
 COPY . .
-RUN npm run build
+RUN bun build src/index.ts --outdir dist --target node --format cjs
 
 FROM --platform=linux/arm64 public.ecr.aws/lambda/nodejs:22
 WORKDIR ${LAMBDA_TASK_ROOT}
 
-COPY package*.json pnpm-lock.yaml ./
 COPY --from=builder /honyaku/dist ./dist
-
-RUN npm install -g pnpm@9
-RUN pnpm install --prod
 
 CMD ["dist/index.handler"]

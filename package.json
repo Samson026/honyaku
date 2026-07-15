@@ -2,8 +2,8 @@
   "name": "honyaku",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc",
+    "dev": "bun --watch run dev --env-file=.env src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --minify --external @aws-sdk/*",
     "start": "node --env-file=.env dist/index.js"
   },
   "dependencies": {
@@ -12,7 +12,6 @@
     "@aws-sdk/lib-dynamodb": "^3.1041.0",
     "@hono/node-server": "^1.19.14",
     "hono": "^4.12.16",
-    "honyaku": "link:",
     "zod": "^4.4.1"
   },
   "pnpm": {
