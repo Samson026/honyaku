@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "bun --watch run dev --env-file=.env src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node --minify --external @aws-sdk/*",
-    "start": "node --env-file=.env dist/index.js"
+    "start": "node --env-file=.env dist/index.js",
+    "lint": "biome lint",
+    "fix": "biome lint --write"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
@@ -18,6 +20,7 @@
     "onlyBuiltDependencies": ["esbuild"]
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.3",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.17",
     "node-gyp": "^12.3.0",
