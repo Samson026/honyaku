@@ -8,7 +8,7 @@ variable "channel_access_token" {
   sensitive = true
 }
 
-variable "groq_api_key" {
+variable "claude_api_key" {
   type      = string
   sensitive = true
 }

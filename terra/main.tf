@@ -61,7 +61,7 @@ resource "aws_lambda_function" "lambda_function" {
   environment {
     variables = {
       CHANNEL_ACCESS_TOKEN = var.channel_access_token
-      GROQ_API_KEY         = var.groq_api_key
+      CLAUDE_API_KEY       = var.claude_api_key
     }
   }
 }
