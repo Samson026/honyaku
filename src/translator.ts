@@ -10,6 +10,19 @@ type RespItem = {
 	text: string;
 };
 
+type LineSource = {
+	type: "user" | "group" | "room";
+	userId: string;
+	groupId: string;
+};
+
+type LineMessageEvent = {
+	type: "message";
+	replyToken: string;
+	source: LineSource;
+	message: { type: "text"; text: string };
+};
+
 const reply = new Hono();
 const client = new Anthropic({
 	apiKey: CLAUDE_API_KEY,
@@ -56,7 +69,7 @@ async function ReplyToMessage(replyToken: string, resp: RespItem[]) {
 	});
 }
 
-async function group_translate(event: any) {
+async function group_translate(event: LineMessageEvent) {
 	const groupID = event.source.groupId;
 	const groupMembers = await GetGroupMembers(groupID);
 	var senderName = "None";
@@ -85,7 +98,7 @@ async function group_translate(event: any) {
 	await ReplyToMessage(event.replyToken, messages);
 }
 
-async function set_language_reply(event: any) {
+async function set_language_reply(event: LineMessageEvent) {
 	const language = event.message.text.split(" ")[1];
 	const userID = event.source.userId;
 	const groupID = event.source.groupId;
