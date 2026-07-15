@@ -1,5 +1,9 @@
+locals {
+  lambda_function_name = "${var.app_name}-lambda-function"
+}
+
 resource "aws_ecr_repository" "ecr_repository" {
-  name = "${var.app_name}"
+  name = var.app_name
 
   image_scanning_configuration {
     scan_on_push = true
@@ -24,12 +28,12 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_iam_role" "lambda_role" {
-  name               = "${var.app_name}_lambda_execution_role"
+  name               = "${var.app_name}-lambda-execution-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
-  name              = "/aws/lambda/${var.app_name}_lamda_function"
+  name              = "/aws/lambda/${local.lambda_function_name}"
   retention_in_days = 14
 }
 
@@ -43,8 +47,8 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb_access" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 }
 
-resource "aws_lambda_function" "honyaku-lambda" {
-  function_name = "${var.app_name}_lamda_function"
+resource "aws_lambda_function" "lambda_function" {
+  function_name = local.lambda_function_name
   role          = aws_iam_role.lambda_role.arn
   package_type  = "Image"
   image_uri     = "${aws_ecr_repository.ecr_repository.repository_url}:latest"
@@ -57,32 +61,32 @@ resource "aws_lambda_function" "honyaku-lambda" {
   environment {
     variables = {
       CHANNEL_ACCESS_TOKEN = var.channel_access_token
-      GROQ_API_KEY         = var.groq_api_key
+      CLAUDE_API_KEY       = var.claude_api_key
     }
   }
 }
 
 # HTTP API Gateway
-resource "aws_apigatewayv2_api" "honyaku_api" {
-  name          = "${var.app_name}_api"
+resource "aws_apigatewayv2_api" "api" {
+  name          = "${var.app_name}-api"
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id                 = aws_apigatewayv2_api.honyaku_api.id
+  api_id                 = aws_apigatewayv2_api.api.id
   integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.honyaku-lambda.invoke_arn
+  integration_uri        = aws_lambda_function.lambda_function.invoke_arn
   payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "default_route" {
-  api_id    = aws_apigatewayv2_api.honyaku_api.id
+  api_id    = aws_apigatewayv2_api.api.id
   route_key = "POST /webhook"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
 resource "aws_apigatewayv2_stage" "default_stage" {
-  api_id      = aws_apigatewayv2_api.honyaku_api.id
+  api_id      = aws_apigatewayv2_api.api.id
   name        = "$default"
   auto_deploy = true
 }
@@ -90,8 +94,8 @@ resource "aws_apigatewayv2_stage" "default_stage" {
 resource "aws_lambda_permission" "apigw_invoke" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.honyaku-lambda.function_name
+  function_name = aws_lambda_function.lambda_function.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.honyaku_api.execution_arn}/*/*/webhook"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/webhook"
 }
 
