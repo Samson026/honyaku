@@ -16,6 +16,7 @@ async function Translate(language: string, text: string) {
     messages: [{ 
       role: "user",
       content: `You are working as a translator to translate a message from one language to another on a text app. The language you need to translate to is ${language} and the text is: ${text} \
+            If the language of the current message is already in the target language, return "null"
             There is no need for anything in the response apart from the translated text. And it should appear as if the original message was written in the translated language. As this is an app between friends keep the casualness \
             of the response to match the original message` 
     }],
@@ -68,6 +69,10 @@ async function group_translate(event: any) {
     }
     console.log(senderName)
     const translation = await Translate(user.lang, event.message.text)
+    if (translation === "null") {
+      // message is already in target language
+      return
+    }
     const reply = `${senderName}:\n${translation}`
     await ReplyToMessage(event.replyToken, reply)
   }
