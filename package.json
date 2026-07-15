@@ -6,7 +6,8 @@
     "build": "bun build src/index.ts --outdir dist --target node --minify --external @aws-sdk/*",
     "start": "node --env-file=.env dist/index.js",
     "lint": "biome lint",
-    "fix": "biome lint --write"
+    "fix": "biome lint --write; biome format --write",
+    "format": "biome format"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
