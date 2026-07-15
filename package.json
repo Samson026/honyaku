@@ -1,31 +1,33 @@
 {
-  "name": "honyaku",
-  "type": "module",
-  "scripts": {
-    "dev": "bun --watch run dev --env-file=.env src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target node --minify --external @aws-sdk/*",
-    "start": "node --env-file=.env dist/index.js",
-    "lint": "biome lint",
-    "fix": "biome lint --write; biome format --write",
-    "format": "biome format"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.96.0",
-    "@aws-sdk/client-dynamodb": "^3.1041.0",
-    "@aws-sdk/lib-dynamodb": "^3.1041.0",
-    "@hono/node-server": "^1.19.14",
-    "hono": "^4.12.16",
-    "zod": "^4.4.1"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.5.3",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^20.11.17",
-    "node-gyp": "^12.3.0",
-    "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
-  }
+	"name": "honyaku",
+	"type": "module",
+	"scripts": {
+		"dev": "bun --watch run dev --env-file=.env src/index.ts",
+		"build": "bun build src/index.ts --outdir dist --target node --minify --external @aws-sdk/*",
+		"start": "node --env-file=.env dist/index.js",
+		"lint": "biome lint",
+		"fix": "biome lint --write; biome format --write",
+		"format": "biome format"
+	},
+	"dependencies": {
+		"@anthropic-ai/sdk": "^0.96.0",
+		"@aws-sdk/client-dynamodb": "^3.1041.0",
+		"@aws-sdk/lib-dynamodb": "^3.1041.0",
+		"@hono/node-server": "^1.19.14",
+		"hono": "^4.12.16",
+		"zod": "^4.4.1"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.3",
+		"@types/better-sqlite3": "^7.6.13",
+		"@types/node": "^20.11.17",
+		"node-gyp": "^12.3.0",
+		"tsx": "^4.7.1",
+		"typescript": "^5.8.3"
+	}
 }

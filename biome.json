@@ -6,12 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": [
-			"**",
-			 "!!**/dist",
-			 "!!**/node_modules",
-			 "!!**/aws"
-			]
+		"includes": ["**", "!!**/dist", "!!**/node_modules", "!!**/aws"]
 	},
 	"formatter": {
 		"enabled": true,
