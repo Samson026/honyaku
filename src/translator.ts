@@ -1,6 +1,13 @@
 import { Hono } from "hono";
 import { AddUserToGroup, GetGroupMembers } from "./userSettingsDB.js";
 import Anthropic from "@anthropic-ai/sdk";
+import {
+	ANTHROPIC_MODEL,
+	LINE_API_BASE,
+	MAX_TOKENS,
+	SET_LANGUAGE_COMMAND,
+	TRANSLATION_NULL_SENTINEL,
+} from "./constants.js";
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
@@ -30,17 +37,17 @@ const client = new Anthropic({
 
 async function Translate(language: string, text: string) {
 	const message = await client.messages.create({
-		max_tokens: 1024,
+		max_tokens: MAX_TOKENS,
 		messages: [
 			{
 				role: "user",
 				content: `You are working as a translator to translate a message from one language to another on a text app. The language you need to translate to is ${language} and the text is: ${text} \
-            If the language of the current message is already in the target language, return "null"
+            If the language of the current message is already in the target language, return "${TRANSLATION_NULL_SENTINEL}"
             There is no need for anything in the response apart from the translated text. And it should appear as if the original message was written in the translated language. As this is an app between friends keep the casualness \
             of the response to match the original message`,
 			},
 		],
-		model: "claude-sonnet-4-6",
+		model: ANTHROPIC_MODEL,
 	});
 
 	for (const block of message.content) {
@@ -56,7 +63,7 @@ async function ReplyToMessage(replyToken: string, resp: RespItem[]) {
 		return;
 	}
 
-	await fetch("https://api.line.me/v2/bot/message/reply", {
+	await fetch(`${LINE_API_BASE}/message/reply`, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
@@ -89,7 +96,7 @@ async function group_translate(event: LineMessageEvent) {
 		}
 		console.log(senderName);
 		const translation = await Translate(user.lang, event.message.text);
-		if (translation !== "null") {
+		if (translation !== TRANSLATION_NULL_SENTINEL) {
 			// message is not in target language
 			const reply = `${senderName}:\n${translation}`;
 			messages.push({ type: "text", text: reply });
@@ -103,7 +110,7 @@ async function set_language_reply(event: LineMessageEvent) {
 	const userID = event.source.userId;
 	const groupID = event.source.groupId;
 	const profileRes = await fetch(
-		`https://api.line.me/v2/bot/group/${groupID}/member/${userID}`,
+		`${LINE_API_BASE}/group/${groupID}/member/${userID}`,
 		{ headers: { Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}` } },
 	);
 	const user = await profileRes.json();
@@ -119,7 +126,7 @@ reply.post("/", async (c) => {
 
 	for (const event of data.events) {
 		if (event.type === "message") {
-			if (event.message.text.includes("/setLanguage")) {
+			if (event.message.text.includes(SET_LANGUAGE_COMMAND)) {
 				await set_language_reply(event);
 			} else {
 				await group_translate(event);

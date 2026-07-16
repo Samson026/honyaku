@@ -32,3 +32,6 @@ lerna-debug.log*
 
 # builds
 dist/
+
+# AWS
+aws/

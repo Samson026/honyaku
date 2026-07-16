@@ -5,7 +5,12 @@ import {
 	QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import z from "zod";
-import { HONYAKU_TABLE } from "./constants.js";
+import {
+	AWS_REGION,
+	GROUP_PREFIX,
+	HONYAKU_TABLE,
+	USER_PREFIX,
+} from "./constants.js";
 
 const UserSchemaDB = z.object({
 	pk: z.string(),
@@ -24,7 +29,7 @@ type User = {
 	name: string;
 };
 
-const client = new DynamoDBClient({ region: "ap-southeast-2" });
+const client = new DynamoDBClient({ region: AWS_REGION });
 const db = DynamoDBDocumentClient.from(client);
 
 export async function AddUserToGroup(
@@ -37,8 +42,8 @@ export async function AddUserToGroup(
 		new PutCommand({
 			TableName: HONYAKU_TABLE,
 			Item: {
-				pk: `GROUP#${groupID}`,
-				sk: `USER#${userID}`,
+				pk: `${GROUP_PREFIX}${groupID}`,
+				sk: `${USER_PREFIX}${userID}`,
 				lang: language,
 				name: displayName,
 			},
@@ -52,7 +57,7 @@ export async function GetGroupMembers(groupID: string) {
 			TableName: HONYAKU_TABLE,
 			KeyConditionExpression: "pk = :pk",
 			ExpressionAttributeValues: {
-				":pk": `GROUP#${groupID}`,
+				":pk": `${GROUP_PREFIX}${groupID}`,
 			},
 		}),
 	);
