@@ -14,4 +14,4 @@ app.route("/webhook", reply);
 export const handler = handle(app);
 
 // bun handler
-export default app
+export default app;
