@@ -2,7 +2,7 @@
 	"name": "honyaku",
 	"type": "module",
 	"scripts": {
-		"dev": "bun --watch run dev --env-file=.env src/index.ts",
+		"dev": "bun --watch --env-file=.env src/index.ts",
 		"build": "bun build src/index.ts --outdir dist --target node --minify --external @aws-sdk/*",
 		"start": "node --env-file=.env dist/index.js",
 		"lint": "biome lint",

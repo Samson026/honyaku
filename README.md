@@ -63,11 +63,16 @@ Named after 翻訳 (*hon'yaku*), the Japanese word for "translation."
 
 ## Environment Variables
 
+Copy `.env.example` to `.env` and fill in the values:
+
+```bash
+cp .env.example .env
+```
+
 | Variable | Description |
 |----------|-------------|
 | `CHANNEL_ACCESS_TOKEN` | LINE Messaging API channel access token |
 | `CLAUDE_API_KEY` | Anthropic API key |
-| `HONYAKU_TABLE` | DynamoDB table name for user settings (default: `honyakuUsers`) |
 
 ## Development
 
@@ -76,6 +81,7 @@ Named after 翻訳 (*hon'yaku*), the Japanese word for "translation."
 bun install
 
 # Start development server (with file watching)
+# Bun serves the app's default export on http://localhost:3000
 bun run dev
 
 # Build for production

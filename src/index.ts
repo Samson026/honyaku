@@ -10,4 +10,8 @@ app.get("/", (c) => {
 
 app.route("/webhook", reply);
 
+// aws handler
 export const handler = handle(app);
+
+// bun handler
+export default app
