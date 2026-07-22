@@ -37,9 +37,9 @@ const MessageSchemaDb = z.object({
 	user: z.string(),
 	name: z.string(),
 	message: z.string(),
-})
+});
 
-export type MessageDB = z.infer<typeof MessageSchemaDb>
+export type MessageDB = z.infer<typeof MessageSchemaDb>;
 
 const client = new DynamoDBClient({ region: AWS_REGION });
 const db = DynamoDBDocumentClient.from(client);
@@ -98,10 +98,10 @@ export async function CacheMessage(message: MessageData) {
 				sk: `${MESSAGE_PREFIX}#${messageUlid}`,
 				user: message.user?.name,
 				message: message.message,
-				expiresAt: expiresAt
-			}
-		})
-	)
+				expiresAt: expiresAt,
+			},
+		}),
+	);
 }
 
 export async function GetMessageCache(groupID: string) {
@@ -111,18 +111,20 @@ export async function GetMessageCache(groupID: string) {
 			KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
 			ExpressionAttributeValues: {
 				":pk": `${GROUP_PREFIX}#${groupID}`,
-				":prefix": `${MESSAGE_PREFIX}`
+				":prefix": `${MESSAGE_PREFIX}`,
 			},
 			ScanIndexForward: false,
-			Limit: 10
-		})
-	)
+			Limit: 10,
+		}),
+	);
 
 	if (!resp.Items || resp.Items.length === 0) {
-		throw new HTTPException(404)
+		throw new HTTPException(404);
 	}
 
-	const messageCache = resp.Items.map((message) => MessageSchemaDb.parse(message))
+	const messageCache = resp.Items.map((message) =>
+		MessageSchemaDb.parse(message),
+	);
 
-	return messageCache
+	return messageCache;
 }

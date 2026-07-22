@@ -1,5 +1,12 @@
 import { Hono } from "hono";
-import { AddUserToGroup, CacheMessage, GetGroupMembers, GetMessageCache, type MessageDB, type User, type UserDB } from "./userSettingsDB.js";
+import {
+	AddUserToGroup,
+	CacheMessage,
+	GetGroupMembers,
+	GetMessageCache,
+	type MessageDB,
+	type User,
+} from "./userSettingsDB.js";
 import Anthropic from "@anthropic-ai/sdk";
 import {
 	ANTHROPIC_MODEL,
@@ -41,9 +48,11 @@ const client = new Anthropic({
 	apiKey: CLAUDE_API_KEY,
 });
 
-
-
-async function Translate(language: string, text: string, chatContext: MessageDB[]) {
+async function Translate(
+	language: string,
+	text: string,
+	chatContext: MessageDB[],
+) {
 	const message = await client.messages.create({
 		max_tokens: MAX_TOKENS,
 		system: `You are a translator for a messaging app between friends.
@@ -114,7 +123,7 @@ async function group_translate(event: LineMessageEvent) {
 	var messageData = {
 		user: null,
 		message: event.message.text,
-		groupID: groupID
+		groupID: groupID,
 	} as MessageData;
 
 	var messages: RespItem[] = [];
@@ -126,7 +135,7 @@ async function group_translate(event: LineMessageEvent) {
 	}
 
 	// get chat context
-	const chatContext = await GetMessageCache(messageData.groupID)
+	const chatContext = await GetMessageCache(messageData.groupID);
 
 	for (const user of groupMembers) {
 		// dont translate for the user who sent the message
@@ -134,7 +143,11 @@ async function group_translate(event: LineMessageEvent) {
 			continue;
 		}
 
-		const translation = await Translate(user.lang, messageData.message, chatContext);
+		const translation = await Translate(
+			user.lang,
+			messageData.message,
+			chatContext,
+		);
 		if (translation !== TRANSLATION_NULL_SENTINEL) {
 			// message is not in target language
 			const reply = `${messageData.user?.name}:\n${translation}`;
@@ -144,7 +157,7 @@ async function group_translate(event: LineMessageEvent) {
 	await ReplyToMessage(event.replyToken, messages);
 
 	//cache message
-	CacheMessage(messageData)
+	CacheMessage(messageData);
 }
 
 async function set_language_reply(event: LineMessageEvent) {
