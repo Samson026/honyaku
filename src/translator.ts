@@ -80,7 +80,7 @@ async function Translate(
 				role: "user",
 				content: `
 					Chat context:
-					<${chatContext}>
+					<${JSON.stringify([...chatContext].reverse())}>
 
 					Newest message:
 
@@ -150,14 +150,14 @@ async function group_translate(event: LineMessageEvent) {
 		);
 		if (translation !== TRANSLATION_NULL_SENTINEL) {
 			// message is not in target language
-			const reply = `${messageData.user?.name}:\n${translation}`;
+			const reply = `${messageData.user?.name ?? "Unknown"}:\n${translation}`;
 			messages.push({ type: "text", text: reply });
 		}
 	}
 	await ReplyToMessage(event.replyToken, messages);
 
 	//cache message
-	CacheMessage(messageData);
+	await CacheMessage(messageData);
 }
 
 async function set_language_reply(event: LineMessageEvent) {

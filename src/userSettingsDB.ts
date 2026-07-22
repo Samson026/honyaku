@@ -14,13 +14,12 @@ import {
 } from "./constants.js";
 import type { MessageData } from "./translator.js";
 import { ulid } from "ulid";
-import { HTTPException } from "hono/http-exception";
 
 const UserSchemaDB = z.object({
 	pk: z.string(),
 	sk: z.string(),
 	lang: z.string(),
-	user: z.string(),
+	name: z.string(),
 });
 
 export type UserDB = z.infer<typeof UserSchemaDB>;
@@ -35,7 +34,6 @@ export type User = {
 
 const MessageSchemaDb = z.object({
 	user: z.string(),
-	name: z.string(),
 	message: z.string(),
 });
 
@@ -96,7 +94,7 @@ export async function CacheMessage(message: MessageData) {
 			Item: {
 				pk: `${GROUP_PREFIX}#${message.groupID}`,
 				sk: `${MESSAGE_PREFIX}#${messageUlid}`,
-				user: message.user?.name,
+				user: message.user?.name ?? "Unknown",
 				message: message.message,
 				expiresAt: expiresAt,
 			},
@@ -119,7 +117,7 @@ export async function GetMessageCache(groupID: string) {
 	);
 
 	if (!resp.Items || resp.Items.length === 0) {
-		throw new HTTPException(404);
+		return [];
 	}
 
 	const messageCache = resp.Items.map((message) =>
