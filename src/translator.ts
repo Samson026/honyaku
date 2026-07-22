@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { AddUserToGroup, GetGroupMembers } from "./userSettingsDB.js";
+import { AddUserToGroup, CacheMessage, GetGroupMembers, GetMessageCache, type MessageDB, type User, type UserDB } from "./userSettingsDB.js";
 import Anthropic from "@anthropic-ai/sdk";
 import {
 	ANTHROPIC_MODEL,
@@ -31,7 +31,7 @@ type LineMessageEvent = {
 };
 
 export type MessageData = {
-	user: string;
+	user: User | null;
 	message: string;
 	groupID: string;
 };
@@ -43,16 +43,40 @@ const client = new Anthropic({
 
 
 
-async function Translate(language: string, text: string) {
+async function Translate(language: string, text: string, chatContext: MessageDB[]) {
 	const message = await client.messages.create({
 		max_tokens: MAX_TOKENS,
+		system: `You are a translator for a messaging app between friends.
+
+			Translate the newest message into ${language}.
+
+			The conversation history, if provided, is for context only. Use it to:
+			- Resolve ambiguous pronouns or omitted subjects.
+			- Maintain consistent names and terminology.
+			- Preserve the speaker's intended tone, personality, and level of formality.
+			- Choose the translation that best fits the surrounding conversation.
+
+			If the newest message is already written in ${language}, return exactly "${TRANSLATION_NULL_SENTINEL}" and nothing else.
+
+			Your translation should read as though it were originally written in ${language}. Preserve the original meaning, tone, casualness, emojis, punctuation, and formatting wherever possible.
+
+			Do not explain the translation.
+			Do not answer the message.
+			Do not continue the conversation.
+			Do not translate the conversation history.
+
+			Return only the translated text (or "${TRANSLATION_NULL_SENTINEL}" if no translation is needed).`,
 		messages: [
 			{
 				role: "user",
-				content: `You are working as a translator to translate a message from one language to another on a text app. The language you need to translate to is ${language} and the text is: ${text} \
-            If the language of the current message is already in the target language, return "${TRANSLATION_NULL_SENTINEL}"
-            There is no need for anything in the response apart from the translated text. And it should appear as if the original message was written in the translated language. As this is an app between friends keep the casualness \
-            of the response to match the original message`,
+				content: `
+					Chat context:
+					<${chatContext}>
+
+					Newest message:
+
+					<${text}>
+				`,
 			},
 		],
 		model: ANTHROPIC_MODEL,
@@ -88,7 +112,7 @@ async function group_translate(event: LineMessageEvent) {
 	const groupID = event.source.groupId;
 	const groupMembers = await GetGroupMembers(groupID);
 	var messageData = {
-		user: "None",
+		user: null,
 		message: event.message.text,
 		groupID: groupID
 	} as MessageData;
@@ -97,12 +121,12 @@ async function group_translate(event: LineMessageEvent) {
 
 	for (const user of groupMembers) {
 		if (user.id === event.source.userId) {
-			messageData.user = user.name;
+			messageData.user = user;
 		}
 	}
 
-	// cache message
-
+	// get chat context
+	const chatContext = await GetMessageCache(messageData.groupID)
 
 	for (const user of groupMembers) {
 		// dont translate for the user who sent the message
@@ -110,14 +134,17 @@ async function group_translate(event: LineMessageEvent) {
 			continue;
 		}
 
-		const translation = await Translate(user.lang, event.message.text);
+		const translation = await Translate(user.lang, messageData.message, chatContext);
 		if (translation !== TRANSLATION_NULL_SENTINEL) {
 			// message is not in target language
-			const reply = `${messageData.user}:\n${translation}`;
+			const reply = `${messageData.user?.name}:\n${translation}`;
 			messages.push({ type: "text", text: reply });
 		}
 	}
 	await ReplyToMessage(event.replyToken, messages);
+
+	//cache message
+	CacheMessage(messageData)
 }
 
 async function set_language_reply(event: LineMessageEvent) {

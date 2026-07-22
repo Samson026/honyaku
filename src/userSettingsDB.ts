@@ -27,20 +27,19 @@ export type UserDB = z.infer<typeof UserSchemaDB>;
 
 const GroupSchema = z.array(UserSchemaDB);
 
-type User = {
+export type User = {
 	id: string;
 	lang: string;
 	name: string;
 };
 
 const MessageSchemaDb = z.object({
-	pk: z.string(),
-	sk: z.string(),
 	user: z.string(),
+	name: z.string(),
 	message: z.string(),
 })
 
-type MessageDB = z.infer<typeof MessageSchemaDb>
+export type MessageDB = z.infer<typeof MessageSchemaDb>
 
 const client = new DynamoDBClient({ region: AWS_REGION });
 const db = DynamoDBDocumentClient.from(client);
@@ -87,7 +86,7 @@ export async function GetGroupMembers(groupID: string) {
 	return groupMembers;
 }
 
-async function CacheMessage(message: MessageData) {
+export async function CacheMessage(message: MessageData) {
 	const messageUlid = ulid();
 
 	await db.send(
@@ -96,14 +95,14 @@ async function CacheMessage(message: MessageData) {
 			Item: {
 				pk: `${GROUP_PREFIX}#${message.groupID}`,
 				sk: `${MESSAGE_PREFIX}#${messageUlid}`,
-				user: message.user,
+				user: message.user?.name,
 				message: message.message
 			}
 		})
 	)
 }
 
-async function GetMessageCache(groupID: string) {
+export async function GetMessageCache(groupID: string) {
 	const resp = await db.send(
 		new QueryCommand({
 			TableName: HONYAKU_TABLE,
@@ -121,9 +120,7 @@ async function GetMessageCache(groupID: string) {
 		throw new HTTPException(404)
 	}
 
-	const messageCache = resp.Items.map((message) => {
-		return MessageSchemaDb.parse(message);
-	}) as MessageDB[]
+	const messageCache = resp.Items.map((message) => MessageSchemaDb.parse(message))
 
 	return messageCache
 }
