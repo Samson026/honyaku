@@ -9,14 +9,18 @@ import {
 	AWS_REGION,
 	GROUP_PREFIX,
 	HONYAKU_TABLE,
+	MESSAGE_PREFIX,
 	USER_PREFIX,
 } from "./constants.js";
+import type { MessageData } from "./translator.js";
+import { ulid } from "ulid";
+import { HTTPException } from "hono/http-exception";
 
 const UserSchemaDB = z.object({
 	pk: z.string(),
 	sk: z.string(),
 	lang: z.string(),
-	name: z.string(),
+	user: z.string(),
 });
 
 export type UserDB = z.infer<typeof UserSchemaDB>;
@@ -28,6 +32,15 @@ type User = {
 	lang: string;
 	name: string;
 };
+
+const MessageSchemaDb = z.object({
+	pk: z.string(),
+	sk: z.string(),
+	user: z.string(),
+	message: z.string(),
+})
+
+type MessageDB = z.infer<typeof MessageSchemaDb>
 
 const client = new DynamoDBClient({ region: AWS_REGION });
 const db = DynamoDBDocumentClient.from(client);
@@ -72,4 +85,45 @@ export async function GetGroupMembers(groupID: string) {
 	});
 
 	return groupMembers;
+}
+
+async function CacheMessage(message: MessageData) {
+	const messageUlid = ulid();
+
+	await db.send(
+		new PutCommand({
+			TableName: HONYAKU_TABLE,
+			Item: {
+				pk: `${GROUP_PREFIX}#${message.groupID}`,
+				sk: `${MESSAGE_PREFIX}#${messageUlid}`,
+				user: message.user,
+				message: message.message
+			}
+		})
+	)
+}
+
+async function GetMessageCache(groupID: string) {
+	const resp = await db.send(
+		new QueryCommand({
+			TableName: HONYAKU_TABLE,
+			KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+			ExpressionAttributeValues: {
+				":pk": `${GROUP_PREFIX}#${groupID}`,
+				":prefix": `${MESSAGE_PREFIX}`
+			},
+			ScanIndexForward: false,
+			Limit: 10
+		})
+	)
+
+	if (!resp.Items || resp.Items.length === 0) {
+		throw new HTTPException(404)
+	}
+
+	const messageCache = resp.Items.map((message) => {
+		return MessageSchemaDb.parse(message);
+	}) as MessageDB[]
+
+	return messageCache
 }

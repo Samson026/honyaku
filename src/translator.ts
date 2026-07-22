@@ -30,10 +30,18 @@ type LineMessageEvent = {
 	message: { type: "text"; text: string };
 };
 
+export type MessageData = {
+	user: string;
+	message: string;
+	groupID: string;
+};
+
 const reply = new Hono();
 const client = new Anthropic({
 	apiKey: CLAUDE_API_KEY,
 });
+
+
 
 async function Translate(language: string, text: string) {
 	const message = await client.messages.create({
@@ -79,26 +87,33 @@ async function ReplyToMessage(replyToken: string, resp: RespItem[]) {
 async function group_translate(event: LineMessageEvent) {
 	const groupID = event.source.groupId;
 	const groupMembers = await GetGroupMembers(groupID);
-	var senderName = "None";
+	var messageData = {
+		user: "None",
+		message: event.message.text,
+		groupID: groupID
+	} as MessageData;
+
 	var messages: RespItem[] = [];
 
 	for (const user of groupMembers) {
 		if (user.id === event.source.userId) {
-			senderName = user.name;
-			console.log(senderName);
+			messageData.user = user.name;
 		}
 	}
+
+	// cache message
+
 
 	for (const user of groupMembers) {
 		// dont translate for the user who sent the message
 		if (user.id === event.source.userId) {
 			continue;
 		}
-		console.log(senderName);
+
 		const translation = await Translate(user.lang, event.message.text);
 		if (translation !== TRANSLATION_NULL_SENTINEL) {
 			// message is not in target language
-			const reply = `${senderName}:\n${translation}`;
+			const reply = `${messageData.user}:\n${translation}`;
 			messages.push({ type: "text", text: reply });
 		}
 	}

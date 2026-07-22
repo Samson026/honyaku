@@ -2,6 +2,8 @@
 export const HONYAKU_TABLE = "honyakuUsers";
 export const GROUP_PREFIX = "GROUP#";
 export const USER_PREFIX = "USER#";
+export const MESSAGE_PREFIX = "MESSAGE#"
+
 
 // AWS
 export const AWS_REGION = "ap-southeast-2";
