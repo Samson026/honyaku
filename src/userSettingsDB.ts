@@ -88,6 +88,7 @@ export async function GetGroupMembers(groupID: string) {
 
 export async function CacheMessage(message: MessageData) {
 	const messageUlid = ulid();
+	const expiresAt = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 
 	await db.send(
 		new PutCommand({
@@ -96,7 +97,8 @@ export async function CacheMessage(message: MessageData) {
 				pk: `${GROUP_PREFIX}#${message.groupID}`,
 				sk: `${MESSAGE_PREFIX}#${messageUlid}`,
 				user: message.user?.name,
-				message: message.message
+				message: message.message,
+				expiresAt: expiresAt
 			}
 		})
 	)
