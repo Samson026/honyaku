@@ -73,6 +73,7 @@ async function Translate(
 			Do not answer the message.
 			Do not continue the conversation.
 			Do not translate the conversation history.
+			Do not add "" to the translation.
 
 			Return only the translated text (or "${TRANSLATION_NULL_SENTINEL}" if no translation is needed).`,
 		messages: [
@@ -148,11 +149,16 @@ async function group_translate(event: LineMessageEvent) {
 			messageData.message,
 			chatContext,
 		);
-		if (translation !== TRANSLATION_NULL_SENTINEL) {
-			// message is not in target language
-			const reply = `${messageData.user?.name ?? "Unknown"}:\n${translation}`;
-			messages.push({ type: "text", text: reply });
+		
+		// message in target language
+		// or from the sender
+		if (translation === TRANSLATION_NULL_SENTINEL || user.id === messageData.user?.id) {
+			continue
 		}
+
+		// message is in target language
+		const reply = `${messageData.user?.name ?? "Unknown"}:\n${translation}`;
+		messages.push({ type: "text", text: reply });
 	}
 	await ReplyToMessage(event.replyToken, messages);
 
