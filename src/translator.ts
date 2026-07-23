@@ -140,26 +140,24 @@ async function group_translate(event: LineMessageEvent) {
 
 	for (const user of groupMembers) {
 		// dont translate for the user who sent the message
-		if (user.id === event.source.userId) {
+		if (user.id === messageData.user?.id) {
 			continue;
 		}
 
-		const translation = await Translate(
-			user.lang,
-			messageData.message,
-			chatContext,
-		);
-		
+		const translation = (
+			await Translate(user.lang, messageData.message, chatContext)
+		).trim();
+
 		// message in target language
-		// or from the sender
-		if (translation === TRANSLATION_NULL_SENTINEL || user.id === messageData.user?.id) {
-			continue
+		if (translation === TRANSLATION_NULL_SENTINEL) {
+			continue;
 		}
 
 		// message is in target language
 		const reply = `${messageData.user?.name ?? "Unknown"}:\n${translation}`;
 		messages.push({ type: "text", text: reply });
 	}
+
 	await ReplyToMessage(event.replyToken, messages);
 
 	//cache message
